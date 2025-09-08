@@ -164,14 +164,78 @@ ST_FUNC void tccelf_begin_file(TCCState *s1)
 #endif
 }
 
+/* index du symbole ( >0 si présent ), 0/neg si absent */
+static int find_sym_idx(TCCState *s1, const char *name) {
+    return find_elf_sym(s1->symtab, name);
+}
+
+/* définir/compléter 'name' en WEAK sans jamais créer de doublon */
+static void define_sym_weak_no_dupe(TCCState *s1, const char *name,
+                                    Section *sec, unsigned long off)
+{
+    int idx = find_sym_idx(s1, name);
+    if (idx > 0) {
+        ElfSym *es = (ElfSym*)s1->symtab->data + idx;
+        if (es->st_shndx == SHN_UNDEF) {
+            es->st_shndx = sec ? sec->sh_num : SHN_ABS;
+            es->st_value = off;
+            es->st_info  = ELFW(ST_INFO)(STB_WEAK, STT_NOTYPE);
+            es->st_other = STV_DEFAULT;
+        }
+        /* déjà défini (fort ou weak) -> ne rien faire */
+        return;
+    }
+    /* totalement absent -> l’ajouter en WEAK */
+    put_elf_sym(s1->symtab, off, 0,
+        ELFW(ST_INFO)(STB_WEAK, STT_NOTYPE), STV_DEFAULT,
+        sec ? sec->sh_num : SHN_ABS, name);
+}
+
+/* Garantir des bornes valides pour {preinit,init,fini}_array,
+   sans doublon, en WEAK, et avec fallback dans une section chargée. */
+static void add_array_bounds(TCCState *s1,
+                             const char *secname,
+                             const char *start_sym,
+                             const char *end_sym,
+                             int sh_type)
+{
+    Section *sec = find_section(s1, secname);
+    if (sec && sec->data_offset > 0) {
+        define_sym_weak_no_dupe(s1, start_sym, sec, 0);
+        define_sym_weak_no_dupe(s1, end_sym,   sec, sec->data_offset);
+        return;
+    }
+    /* pas de section / vide : borne start==end dans une section *chargée* */
+    {
+        Section *d = data_section;              /* macro TCC (pas s1->data_section) */
+        unsigned long off = d ? d->data_offset : 0;
+        define_sym_weak_no_dupe(s1, start_sym, d, off);
+        define_sym_weak_no_dupe(s1, end_sym,   d, off);
+    }
+}
+
 static void update_relocs(TCCState *s1, Section *s, int *old_to_new_syms, int first_sym);
 
 /* At the end of compilation, convert any UNDEF syms to global, and merge
    with previously existing symbols */
 ST_FUNC void tccelf_end_file(TCCState *s1)
 {
+
     Section *s = s1->symtab;
     int first_sym, nb_syms, *tr, i;
+
+#if 0
+   /* ensure symbols expected by newlib/glibc */
+   add_array_bounds(s1, ".preinit_array",
+                 "__preinit_array_start", "__preinit_array_end",
+                 SHT_PREINIT_ARRAY);
+   add_array_bounds(s1, ".init_array",
+                 "__init_array_start", "__init_array_end",
+                 SHT_INIT_ARRAY);
+   add_array_bounds(s1, ".fini_array",
+                 "__fini_array_start", "__fini_array_end",
+                 SHT_FINI_ARRAY);
+#endif
 
     first_sym = s->sh_offset / sizeof (ElfSym);
     nb_syms = s->data_offset / sizeof (ElfSym) - first_sym;
@@ -2952,7 +3016,8 @@ static int elf_output_file(TCCState *s1, const char *filename)
 #endif
 	    dyninf.gnu_hash = create_gnu_hash(s1);
         } else {
-            build_got_entries(s1, 0);
+            //FIXME
+            //build_got_entries(s1, 0);
         }
 	version_add (s1);
 
@@ -3005,11 +3070,13 @@ static int elf_output_file(TCCState *s1, const char *filename)
     layout_sections(s1, sec_order, &dyninf);
 
         if (dynamic) {
+            if (s1->got) { // FIXME
             /* put in GOT the dynamic section address and relocate PLT */
             write32le(s1->got->data, dynamic->sh_addr);
             if (file_type == TCC_OUTPUT_EXE
                 || (RELOCATE_DLLPLT && (file_type & TCC_OUTPUT_DYN)))
                 relocate_plt(s1);
+            }
             /* relocate symbols in .dynsym now that final addresses are known */
             relocate_syms(s1, s1->dynsym, 2);
         }
@@ -3026,10 +3093,12 @@ static int elf_output_file(TCCState *s1, const char *filename)
             fill_dynamic(s1, &dyninf);
 	}
         /* Perform relocation to GOT or PLT entries */
+        if (s1->got) { // FIXME
         if (file_type == TCC_OUTPUT_EXE && s1->static_link)
             fill_got(s1);
         else if (s1->got)
             fill_local_got_entries(s1);
+        }
 
     if (dyninf.gnu_hash)
         update_gnu_hash(s1, dyninf.gnu_hash);
