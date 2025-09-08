@@ -35,7 +35,7 @@
 
 #if !defined(_WIN32)
 #include <unistd.h>
-#include <sys/syscall.h>
+//#include <sys/syscall.h>
 #endif
 
 #include "config.h"
@@ -112,7 +112,7 @@ static CRITICAL_SECTION bounds_sem;
 #include <sys/mman.h>
 #include <ctype.h>
 #include <pthread.h>
-#include <dlfcn.h>
+//#include <dlfcn.h>
 #include <errno.h>
 #include <signal.h>
 #ifdef __APPLE__
