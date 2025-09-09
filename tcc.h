@@ -43,7 +43,7 @@
 # include <unistd.h>
 # include <sys/time.h>
 # ifndef CONFIG_TCC_STATIC
-#  include <dlfcn.h>
+//#  include <dlfcn.h>
 # endif
 /* XXX: need to define this to use them in non ISOC99 context */
 extern float strtof (const char *__nptr, char **__endptr);
@@ -1936,6 +1936,7 @@ static inline void post_sem(TCCSem *p) {
     dispatch_semaphore_signal(p->sem);
 }
 #else
+
 #include <semaphore.h>
 typedef struct { int init; sem_t sem; } TCCSem;
 static inline void wait_sem(TCCSem *p) {
@@ -1946,6 +1947,7 @@ static inline void wait_sem(TCCSem *p) {
 static inline void post_sem(TCCSem *p) {
     sem_post(&p->sem);
 }
+
 #endif
 #define TCC_SEM(s) TCCSem s
 #define WAIT_SEM wait_sem
