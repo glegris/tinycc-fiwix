@@ -1009,6 +1009,8 @@ struct TCCState {
     /* -Wl options */
     char **link_argv;
     int link_argc, link_optind;
+    
+    int soft_float; /* -msoft-float : remplace toutes ops float par libcalls */
 };
 
 struct filespec {
