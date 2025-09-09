@@ -1,0 +1,15 @@
+exec /usr/bin/tcc -static -nostdlib \
+  /usr/i386-pc-fiwix/lib/crt0.o \
+  /usr/lib/gcc/i386-pc-fiwix/4.7.4/crti.o \
+  /usr/lib/gcc/i386-pc-fiwix/4.7.4/crtbegin.o \
+  "$@" \
+  -L/usr/i386-pc-fiwix/lib -lc -lm -lsoftfloat \
+  -L/usr/lib/tcc -ltcc1 \
+  /usr/lib/gcc/i386-pc-fiwix/4.7.4/crtend.o \
+  /usr/lib/gcc/i386-pc-fiwix/4.7.4/crtn.o \
+
+#  -L. -ltcc1 \
+# -L/usr/lib/gcc/i386-pc-fiwix/4.7.4 -l:libgcc.a
+#  test.c initarray_shim.o \
+#  /usr/lib/tcc/libtcc1.a \
+
