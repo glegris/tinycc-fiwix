@@ -1557,6 +1557,7 @@ enum {
     TCC_OPTION_x,
     TCC_OPTION_ar,
     TCC_OPTION_impdef,
+    TCC_OPTION_soft_float,
     /* macho */
     TCC_OPTION_dynamiclib,
     TCC_OPTION_flat_namespace,
@@ -1621,6 +1622,7 @@ static const TCCOption tcc_options[] = {
 #ifdef TCC_TARGET_ARM
     { "mfloat-abi", TCC_OPTION_mfloat_abi, TCC_OPTION_HAS_ARG },
 #endif
+    { "msoft-float", TCC_OPTION_soft_float, 0}, // before "m"
     { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "isystem", TCC_OPTION_isystem, TCC_OPTION_HAS_ARG },
@@ -2119,6 +2121,10 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
 	    s->current_version = parse_version(s, optarg);;
             break;
 #endif
+        case TCC_OPTION_soft_float:
+            printf("libtcc: tcc_parse_args: soft float\n");
+            s->soft_float = 1;
+            break;
         case TCC_OPTION_HELP:
             x = OPT_HELP;
             goto extra_action;
