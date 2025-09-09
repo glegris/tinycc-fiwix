@@ -1,3 +1,4 @@
+#./configure --prefix=/usr --crtprefix=/usr/lib/tcc --libpaths=/usr/i386-pc-fiwix/lib --enable-static
 ./configure --prefix=/usr --enable-static
 
 printf '%s\n' \
